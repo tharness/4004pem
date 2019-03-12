@@ -1,0 +1,4 @@
+Go ahead with the 4004 emulation, but add one more feature after the
+emulation is done. That is, create a version of the 4004 which has a
+two-stage pipeline (stage one: fetch/decode; stage two:
+execute/writeback). This is similar to the AVR.
