@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "emulate.h"
 
 int main(int argc, char **argv) {
 
     int pipelined = 0;
-    FILE *prog; 
+    FILE *prog;
 
     if (argc == 2) {
         prog = fopen(argv[1], "rb");
@@ -32,8 +33,11 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Invalid parameters: Please use \"4004pem [-p] program\", where program is an assembled 4004 program\n");
     }
 
-
+    emulate(prog);
 
     fclose(prog);
     return 0;
 }
+
+
+

@@ -1,2 +1,4 @@
 4004pem.exe
 interface.o
+emulate.o
+test
