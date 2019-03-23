@@ -17,8 +17,8 @@
 #define LDM 13
 //subgroup 3: instructions for reading/writing to memory and status
 #define RW_MEM_STATUS 14
-//subgroup 4: instructions to manipulate bits in registers and miscellanious
-#define BIT_MISC 15
+//subgroup 4: accumulator instructions group
+#define ACC_GROUP 15
 
 //instruction subgroup 1
 #define FIM 0
@@ -64,5 +64,9 @@
 
 void emulate(FILE*);
 void fetch();
-char decode();
-void execute(char);
+unsigned char decode();
+void execute(unsigned char);
+unsigned char read_RAM();
+unsigned char read_RAM_status(unsigned char);
+void write_RAM();
+void write_RAM_status(unsigned char);
