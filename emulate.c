@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include "emulate.h"
 
-#define RAM_SIZE 80
-
 FILE *ROM;
 unsigned char term = 0;
 
@@ -25,7 +23,7 @@ unsigned char subgroup;
 short jump_addr = 0;
 
 
-void emulate(FILE *prog) {
+char *emulate(FILE *prog) {
     ROM = prog;
     unsigned char opcode;
     PC = 0;
@@ -33,7 +31,7 @@ void emulate(FILE *prog) {
         fetch();
         opcode = decode();
         execute(opcode);
-        if (term) return;
+        if (term) return RAM;
     }
 }
 
