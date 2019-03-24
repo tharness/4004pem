@@ -2,6 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include "emulate.h"
+extern unsigned char RAM[RAM_SIZE];
+void print_ram();
 
 int main(int argc, char **argv) {
 
@@ -32,11 +34,36 @@ int main(int argc, char **argv) {
     else {
         fprintf(stderr, "Invalid parameters: Please use \"4004pem [-p] program\", where program is an assembled 4004 program\n");
     }
-
+    
+    print_ram();
     emulate(prog);
+    print_ram();
 
     fclose(prog);
     return 0;
+}
+
+void print_ram(){
+    printf("\t\t\tMAIN MEMORY\n");
+    int i = 0;
+    int j = 16;
+    
+
+    for (int reg = 0;reg<4;reg++){
+        printf("Register:%d ",reg);
+
+        for(i;i<j;i++){
+            printf(" %x",RAM[i]);
+        }
+        j = j+4;
+        printf(" Status: ");
+        for(i;i<j;i++){
+            printf(" %x",RAM[i]);
+        }
+        j = j +16;
+        printf("\n");
+
+    }
 }
 
 
