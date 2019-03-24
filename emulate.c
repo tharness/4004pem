@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "emulate.h"
 
-FILE *ROM;
+extern FILE *ROM;
 unsigned char term = 0;
 
 unsigned char RAM[RAM_SIZE] = {0};
@@ -23,15 +23,16 @@ unsigned char subgroup;
 short jump_addr = 0;
 
 
-char *emulate(FILE *prog) {
-    ROM = prog;
+int emulate(int pipelined) {
+    int cycles = 0;
     unsigned char opcode;
     PC = 0;
     for (;;) {
         fetch();
         opcode = decode();
         execute(opcode);
-        if (term) return RAM;
+        cycles++;
+        if (term) return cycles;
     }
 }
 

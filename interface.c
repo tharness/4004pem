@@ -1,22 +1,22 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
 #include "emulate.h"
 
-void print_ram(unsigned char*);
-void print_regs(unsigned char*, unsigned char);
+void print_ram();
+void print_regs();
 
+extern unsigned char RAM[RAM_SIZE];
 extern unsigned char registers[16];
 extern unsigned char acc;
+FILE *ROM;
 
 int main(int argc, char **argv) {
 
     int pipelined = 0;
-    FILE *prog;
-
+    
     if (argc == 2) {
-        prog = fopen(argv[1], "rb");
-        if (prog == NULL) {
+        ROM = fopen(argv[1], "rb");
+        if (ROM == NULL) {
             fprintf(stderr, "File %s does not exist\n", argv[1]);
             return 1;
         }
@@ -29,8 +29,8 @@ int main(int argc, char **argv) {
             fprintf(stderr, "%s is not recognised as a parameter\n", argv[1]);
             return 1;
         }
-        prog = fopen(argv[2], "rb");
-        if (prog == NULL) {
+        ROM = fopen(argv[2], "rb");
+        if (ROM == NULL) {
             fprintf(stderr, "File %s does not exist\n", argv[2]);
             return 1;
         }
@@ -39,15 +39,16 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Invalid parameters: Please use \"4004pem [-p] program\", where program is an assembled 4004 program\n");
     }
     
-    char *RAM = emulate(prog);
-    print_regs(registers, acc);
-    print_ram(RAM);
+    int cycles = emulate(pipelined);
+    printf("Number of cycles: %d\n", cycles);
+    print_regs();
+    print_ram();
 
-    fclose(prog);
+    fclose(ROM);
     return 0;
 }
 
-void print_ram(unsigned char *RAM){
+void print_ram(){
     printf("\t\t\tMAIN MEMORY\n");
     int i = 0;
     int j = 16;
@@ -70,15 +71,15 @@ void print_ram(unsigned char *RAM){
     }
 }
 
-void print_regs(unsigned char *regs, unsigned char a) {
+void print_regs() {
         printf("\t\t\tREGISTERS\n");
         int i;
         for (i = 0; i < 16; i+=4) {
-            printf("  r%02d - r%02d:", i, i + 3);
-            printf(" %x", regs[i]);
-            printf(" %x", regs[i + 1]);
-            printf(" %x", regs[i + 2]);
-            printf(" %x\n", regs[i + 3]);
+            printf(" r%02d to r%02d:", i, i + 3);
+            printf(" %x", registers[i]);
+            printf(" %x", registers[i + 1]);
+            printf(" %x", registers[i + 2]);
+            printf(" %x\n", registers[i + 3]);
         }
-        printf("Accumulator: %x\n", a);
+        printf("Accumulator: %x\n", acc);
     }

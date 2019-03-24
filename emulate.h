@@ -64,7 +64,7 @@
 
 #define RAM_SIZE 80
 
-char *emulate(FILE*);
+int emulate(int);
 void fetch();
 unsigned char decode();
 void execute(unsigned char);
