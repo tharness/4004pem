@@ -62,6 +62,8 @@
 #define KBP 12
 #define DCL 13
 
+#define RAM_SIZE 80
+
 void emulate(FILE*);
 void fetch();
 unsigned char decode();
