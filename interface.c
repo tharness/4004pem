@@ -3,7 +3,11 @@
 #include <stdlib.h>
 #include "emulate.h"
 
-void print_ram(char*);
+void print_ram(unsigned char*);
+void print_regs(unsigned char*, unsigned char);
+
+extern unsigned char registers[16];
+extern unsigned char acc;
 
 int main(int argc, char **argv) {
 
@@ -36,13 +40,14 @@ int main(int argc, char **argv) {
     }
     
     char *RAM = emulate(prog);
+    print_regs(registers, acc);
     print_ram(RAM);
 
     fclose(prog);
     return 0;
 }
 
-void print_ram(char *RAM){
+void print_ram(unsigned char *RAM){
     printf("\t\t\tMAIN MEMORY\n");
     int i = 0;
     int j = 16;
@@ -65,5 +70,15 @@ void print_ram(char *RAM){
     }
 }
 
-
-
+void print_regs(unsigned char *regs, unsigned char a) {
+        printf("\t\t\tREGISTERS\n");
+        int i;
+        for (i = 0; i < 16; i+=4) {
+            printf("  r%02d - r%02d:", i, i + 3);
+            printf(" %x", regs[i]);
+            printf(" %x", regs[i + 1]);
+            printf(" %x", regs[i + 2]);
+            printf(" %x\n", regs[i + 3]);
+        }
+        printf("Accumulator: %x\n", a);
+    }
