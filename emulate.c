@@ -2,6 +2,7 @@
 #include "emulate.h"
 #include <pthread.h>
 #include <string.h>
+#include <stdlib.h>
 
 extern FILE *ROM;
 unsigned char term = 0;
@@ -50,22 +51,30 @@ pthread_t thread_execute_wb;
 int emulate(int pipelined) {
     int cycles = 0;
     PC = 0;
+    
+    pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
+    pthread_join(thread_fetch_decode,NULL);
+    copy();
 
     for(;;){
-        
-    //     pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
-    //     pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
+      
+        int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
+        int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
+        if(e1 | e2){
+            printf("Error\n");
+            exit(EXIT_FAILURE);
 
-    //     // join threads
+        }
+    // //     // join threads
+        e2 = pthread_join(thread_fetch_decode,NULL);
+        e1 = pthread_join(thread_execute_wb,NULL);
+        if(e1 | e2){
+            printf("Error\n");
+            exit(EXIT_FAILURE);
 
-    //     pthread_join(thread_fetch_decode,NULL);
-    //     pthread_join(thread_execute_wb,NULL);
-    //     
-        // print();
-        fetch_decode();
+        }
         copy();
-        print();
-        execute_wb();
+
         cycles++;
         if (term) return cycles;
     }
@@ -78,22 +87,23 @@ void print(){
     printf("reg_select %x  %x\n",reg_select,reg_select_buff);
     printf("immidiate1 %x  %x\n",immediate1,immediate1_buff);
     printf("immidiate2 %x  %x\n",immediate2,immediate2_buff);
-    printf("subgroup %x  %x\n",subgroup,subgroup_buff);
     printf("pc %x  %x\n",PC,PC_buff);
-    printf("RAM_reg_select %x  %x\n",RAM_reg_select,RAM_reg_select_buff);
+    printf("subgroup %x  %x\n",subgroup,subgroup_buff);
     printf("RAM_slot_buff %x  %x\n",RAM_slot,RAM_slot_buff);
-
+    printf("jump_addr %x  %x\n",jump_addr,jump_addr_buff);
+    printf("RAM_reg_select %x  %x\n",RAM_reg_select,RAM_reg_select_buff);
 }
 void copy(){
-    memcpy(&opcode_buff,&opcode,strlen(&opcode));
-    memcpy(&reg_select_buff,&reg_select,strlen(&reg_select));
-    memcpy(&immediate1_buff,&immediate1,strlen(&immediate1));
-    memcpy(&immediate2_buff,&immediate2,strlen(&immediate2));
-    memcpy(&subgroup_buff,&subgroup,strlen(&subgroup));
+    
+    opcode_buff = opcode;
+    reg_select_buff = reg_select;
+    immediate1_buff = immediate1;
+    immediate2_buff = immediate2;
     PC_buff = PC;
-    memcpy(&RAM_reg_select_buff,&RAM_reg_select,strlen(&RAM_reg_select));
-    memcpy(&RAM_slot_buff,&RAM_slot,strlen(&RAM_slot));
+    subgroup_buff = subgroup;
+    RAM_slot_buff = RAM_slot;
     jump_addr_buff = jump_addr;
+    RAM_reg_select_buff = RAM_reg_select;
 
 }
 
@@ -103,17 +113,14 @@ void *fetch_decode(){
         fetch();
         opcode = decode();
         fetch_decode_count++;
-        // pthread_exit(NULL);
-
+        pthread_exit(NULL);
 }
-
 
 void *execute_wb(){
 
-        printf("Execute WB: %d\n",execute_wb_count);
         execute();
         execute_wb_count++;
-        // pthread_exit(NULL);
+        pthread_exit(NULL);
 
 }
 
@@ -303,5 +310,3 @@ void write_RAM() {
 void write_RAM_status(unsigned char s) {
     RAM[RAM_reg_select_buff * 20 + 16 + s] = acc;
 }
-
-
