@@ -67,8 +67,12 @@
 int emulate(int);
 void fetch();
 unsigned char decode();
-void execute(unsigned char);
+void *fetch_decode();
+void *execute_wb();
+void execute();
 unsigned char read_RAM();
 unsigned char read_RAM_status(unsigned char);
 void write_RAM();
 void write_RAM_status(unsigned char);
+void copy();
+void print();
