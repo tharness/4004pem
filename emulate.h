@@ -75,4 +75,4 @@ unsigned char read_RAM_status(unsigned char);
 void write_RAM();
 void write_RAM_status(unsigned char);
 void buffer_transfer();
-void reg_buffer_tramsfer();
+void reg_buffer_transfer();
