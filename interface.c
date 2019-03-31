@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
     }
     else if (argc == 3) {
         if (strncmp(argv[1], "-p", 3) == 0) {
+            printf("Pipelined\n");
             pipelined = 1;
         }
         else {
