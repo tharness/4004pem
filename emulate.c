@@ -26,10 +26,7 @@ unsigned char immediate2;
 unsigned char subgroup;
 short jump_addr = 0;
 
-
-int fetch_decode_count = 0;
-int execute_wb_count = 0;
-
+int pipelined;
 // Buffers for pipeline
 unsigned char registers_buff[16] = {0};
 unsigned char opcode_buff;
@@ -50,38 +47,43 @@ pthread_t thread_fetch_decode;
 pthread_t thread_execute_wb;
 
 
-int emulate(int pipelined) {
+int emulate(int p) {
+    pipelined = p;
     int cycles = 0;
     PC = 0;
-    
-    pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
-    pthread_join(thread_fetch_decode,NULL);
-    copy();
+    if (pipelined){
+        pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
+        pthread_join(thread_fetch_decode,NULL);
+    }
     for(;;){
+        if(pipelined){
+            copy();
 
-        int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
-        int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
-        if(e1 | e2){ printf("Error\n"); exit(EXIT_FAILURE); }
-
-
-        // join threads
-        e2 = pthread_join(thread_fetch_decode,NULL);
-        e1 = pthread_join(thread_execute_wb,NULL);
-        if(e1 | e2){ printf("Error\n"); exit(EXIT_FAILURE); }
-
-        if(branch_hazard == 1){
-            printf("Branch Haz: %d %d\n",PC,PC_buff);
-            branch_hazard =0;
-            PC = PC_buff;
             int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
-            pthread_join(thread_fetch_decode,NULL);
+            int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
+            if(e1 | e2){ printf("Error creating threads\n"); exit(EXIT_FAILURE); }
+    
+            e2 = pthread_join(thread_fetch_decode,NULL);
+            e1 = pthread_join(thread_execute_wb,NULL);
+            if(e1 | e2){ printf("Error joining threads\n"); exit(EXIT_FAILURE); }
+            for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
+
+    //      Check if branch Hazard
+            if(branch_hazard == 1){
+                branch_hazard =0;
+                PC = PC_buff;
+                pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
+                pthread_join(thread_fetch_decode,NULL);
+            }
 
         }
-        for(int i=0;i<16;i++){
-            registers[i] = registers_buff[i];
+        else{
+            fetch_decode();
+            copy();
+            execute_wb();
+            for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
         }
-        copy();
-     
+        
         cycles++;
         if (term) return cycles;
     }
@@ -108,7 +110,6 @@ void copy(){
     reg_select_buff = reg_select;
     immediate1_buff = immediate1;
     immediate2_buff = immediate2;
-    // PC_buff = PC;
     subgroup_buff = subgroup;
     RAM_slot_buff = RAM_slot;
     jump_addr_buff = jump_addr;
@@ -121,15 +122,13 @@ void *fetch_decode(){
 
         fetch();
         opcode = decode();
-        fetch_decode_count++;
-        pthread_exit(NULL);
+        if(pipelined) pthread_exit(NULL);
 }
 
 void *execute_wb(){
 
         execute();
-        execute_wb_count++;
-        pthread_exit(NULL);
+        if(pipelined) pthread_exit(NULL);
 
 }
 
@@ -207,16 +206,6 @@ unsigned char decode() {
     return OPR;
 }
 
-
-/*In both Fetch/Decode and Execute/Wb
-1)opcode
-2,3)immediate1,immediate2
-4)subgroup
-5)reg_select
-6)PC
-7,8)RAM_reg_select,RAM_slot
-9) jump_addr
-*/
 void execute() {
         unsigned char temp;
         switch (opcode_buff) {
@@ -296,6 +285,7 @@ void execute() {
                 if (registers_buff[reg_select_buff]){    
                     PC_buff = jump_addr_buff;
                     branch_hazard = 1;
+                    if(!pipelined) PC = jump_addr_buff;
                 }
                 break;
             case INC:
