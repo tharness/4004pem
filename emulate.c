@@ -26,8 +26,10 @@ unsigned char immediate2;
 unsigned char subgroup;
 short jump_addr = 0;
 
+
 int pipelined;
-// Buffers for pipeline
+
+// Pipeline Buffers
 unsigned char registers_buff[16] = {0};
 unsigned char opcode_buff;
 unsigned char reg_select_buff;
@@ -39,13 +41,10 @@ unsigned char RAM_reg_select_buff = 0;
 short jump_addr_buff = 0;
 unsigned char RAM_slot_buff = 0;
 
+//Threads for Pipeline
 int branch_hazard = 0;
-
-
-//Threads
 pthread_t thread_fetch_decode;
 pthread_t thread_execute_wb;
-
 
 int emulate(int p) {
     pipelined = p;
@@ -58,24 +57,19 @@ int emulate(int p) {
     for(;;){
         if(pipelined){
             copy();
-
             int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
             int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
-            if(e1 | e2){ printf("Error creating threads\n"); exit(EXIT_FAILURE); }
-    
             e2 = pthread_join(thread_fetch_decode,NULL);
             e1 = pthread_join(thread_execute_wb,NULL);
-            if(e1 | e2){ printf("Error joining threads\n"); exit(EXIT_FAILURE); }
             for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
 
-    //      Check if branch Hazard
+    //      Check for branch Hazard
             if(branch_hazard == 1){
                 branch_hazard =0;
                 PC = PC_buff;
                 pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
                 pthread_join(thread_fetch_decode,NULL);
             }
-
         }
         else{
             fetch_decode();
@@ -83,29 +77,12 @@ int emulate(int p) {
             execute_wb();
             for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
         }
-        
         cycles++;
         if (term) return cycles;
     }
 }
 
-
-
-void print(){
-
-    printf("Test copy--------\n");
-    printf("Opcode %x  %x\n",opcode,opcode_buff);
-    printf("reg_select %x  %x\n",reg_select,reg_select_buff);
-    printf("immidiate1 %x  %x\n",immediate1,immediate1_buff);
-    printf("immidiate2 %x  %x\n",immediate2,immediate2_buff);
-    // printf("pc %x  %x\n",PC,PC_buff);
-    printf("subgroup %x  %x\n",subgroup,subgroup_buff);
-    printf("RAM_slot_buff %x  %x\n",RAM_slot,RAM_slot_buff);
-    printf("jump_addr %x  %x\n",jump_addr,jump_addr_buff);
-    printf("RAM_reg_select %x  %x\n",RAM_reg_select,RAM_reg_select_buff);
-}
 void copy(){
-    
     opcode_buff = opcode;
     reg_select_buff = reg_select;
     immediate1_buff = immediate1;
@@ -114,21 +91,17 @@ void copy(){
     RAM_slot_buff = RAM_slot;
     jump_addr_buff = jump_addr;
     RAM_reg_select_buff = RAM_reg_select;
-
 }
 
-
 void *fetch_decode(){
-
-        fetch();
-        opcode = decode();
-        if(pipelined) pthread_exit(NULL);
+    fetch();
+    opcode = decode();
+    if(pipelined) pthread_exit(NULL);
 }
 
 void *execute_wb(){
-
-        execute();
-        if(pipelined) pthread_exit(NULL);
+    execute();
+    if(pipelined) pthread_exit(NULL);
 
 }
 
