@@ -74,5 +74,5 @@ unsigned char read_RAM();
 unsigned char read_RAM_status(unsigned char);
 void write_RAM();
 void write_RAM_status(unsigned char);
-void copy();
-void print();
+void buffer_transfer();
+void reg_buffer_tramsfer();

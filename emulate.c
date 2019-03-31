@@ -55,12 +55,12 @@ int emulate(int p) {
     }
     for(;;){
         if(pipelined){
-            copy();
+            buffer_transfer();
             int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
             int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
             e2 = pthread_join(thread_fetch_decode,NULL);
             e1 = pthread_join(thread_execute_wb,NULL);
-            for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
+            reg_buffer_transfer();
 
     //      Check for branch Hazard
             if(branch_hazard == 1){
@@ -72,16 +72,23 @@ int emulate(int p) {
         }
         else{
             fetch_decode();
-            copy();
+            buffer_transfer();
             execute_wb();
-            for(int i=0;i<16;i++) registers[i] = registers_buff[i]; 
+            reg_buffer_transfer();
         }
         cycles++;
         if (term) return cycles;
     }
 }
 
-void copy(){
+void reg_buffer_transfer() {
+    int i;
+    for(i = 0; i < 16 ; i++) {
+        registers[i] = registers_buff[i];
+    }
+}
+
+void buffer_transfer() {
     opcode_buff = opcode;
     reg_select_buff = reg_select;
     immediate1_buff = immediate1;
