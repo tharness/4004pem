@@ -53,9 +53,9 @@ void print_ram(){
     printf("\t\t\tMAIN MEMORY\n");
     int i = 0;
     int j = 16;
-    
+    int reg;
 
-    for (int reg = 0;reg<4;reg++){
+    for (reg = 0; reg < 4; reg++){
         printf("Register:%d ",reg);
 
         for(i;i<j;i++){
