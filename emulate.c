@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "emulate.h"
 #include <pthread.h>
-#include <string.h>
 #include <stdlib.h>
 
 extern FILE *ROM;
