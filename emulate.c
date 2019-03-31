@@ -31,6 +31,7 @@ int fetch_decode_count = 0;
 int execute_wb_count = 0;
 
 // Buffers for pipeline
+unsigned char registers_buff[16] = {0};
 unsigned char opcode_buff;
 unsigned char reg_select_buff;
 unsigned char immediate1_buff;
@@ -41,6 +42,7 @@ unsigned char RAM_reg_select_buff = 0;
 short jump_addr_buff = 0;
 unsigned char RAM_slot_buff = 0;
 
+int branch_hazard = 0;
 
 
 //Threads
@@ -55,30 +57,37 @@ int emulate(int pipelined) {
     pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
     pthread_join(thread_fetch_decode,NULL);
     copy();
-
     for(;;){
-      
+
         int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
         int e2 = pthread_create(&thread_execute_wb,NULL,execute_wb,NULL);
-        if(e1 | e2){
-            printf("Error\n");
-            exit(EXIT_FAILURE);
+        if(e1 | e2){ printf("Error\n"); exit(EXIT_FAILURE); }
 
-        }
-    // //     // join threads
+
+        // join threads
         e2 = pthread_join(thread_fetch_decode,NULL);
         e1 = pthread_join(thread_execute_wb,NULL);
-        if(e1 | e2){
-            printf("Error\n");
-            exit(EXIT_FAILURE);
+        if(e1 | e2){ printf("Error\n"); exit(EXIT_FAILURE); }
+
+        if(branch_hazard == 1){
+            printf("Branch Haz: %d %d\n",PC,PC_buff);
+            branch_hazard =0;
+            PC = PC_buff;
+            int e1 = pthread_create(&thread_fetch_decode,NULL,fetch_decode,NULL);
+            pthread_join(thread_fetch_decode,NULL);
 
         }
+        for(int i=0;i<16;i++){
+            registers[i] = registers_buff[i];
+        }
         copy();
-
+     
         cycles++;
         if (term) return cycles;
     }
 }
+
+
 
 void print(){
 
@@ -87,7 +96,7 @@ void print(){
     printf("reg_select %x  %x\n",reg_select,reg_select_buff);
     printf("immidiate1 %x  %x\n",immediate1,immediate1_buff);
     printf("immidiate2 %x  %x\n",immediate2,immediate2_buff);
-    printf("pc %x  %x\n",PC,PC_buff);
+    // printf("pc %x  %x\n",PC,PC_buff);
     printf("subgroup %x  %x\n",subgroup,subgroup_buff);
     printf("RAM_slot_buff %x  %x\n",RAM_slot,RAM_slot_buff);
     printf("jump_addr %x  %x\n",jump_addr,jump_addr_buff);
@@ -99,7 +108,7 @@ void copy(){
     reg_select_buff = reg_select;
     immediate1_buff = immediate1;
     immediate2_buff = immediate2;
-    PC_buff = PC;
+    // PC_buff = PC;
     subgroup_buff = subgroup;
     RAM_slot_buff = RAM_slot;
     jump_addr_buff = jump_addr;
@@ -217,18 +226,18 @@ void execute() {
             case FIM_SRC:
                 switch (subgroup_buff) {
                     case FIM:
-                        registers[reg_select_buff] = immediate1_buff;
-                        registers[reg_select_buff+ 1] = immediate2_buff;
+                        registers_buff[reg_select_buff] = immediate1_buff;
+                        registers_buff[reg_select_buff+ 1] = immediate2_buff;
                         break;
                     case SRC:
                         break;
                 }
                 break;
             case LD:
-                acc = registers[reg_select_buff];
+                acc = registers_buff[reg_select_buff];
                 break;
             case ADD:
-                acc += registers[reg_select_buff] + carry;
+                acc += registers_buff[reg_select_buff] + carry;
                 carry = 0;
                 if (acc > 15) {
                     acc = acc & 0x0f;
@@ -237,18 +246,18 @@ void execute() {
                 break;
             case XCH:
                 temp = acc;
-                acc = registers[reg_select_buff];
-                registers[reg_select_buff] = temp;
+                acc = registers_buff[reg_select_buff];
+                registers_buff[reg_select_buff] = temp;
                 break;
             case NOP:
                 break;
             case FIN_JIN:
                 switch (subgroup_buff) {
                     case FIN:
-                        temp = registers[0] << 4;
-                        temp = temp | registers[1];
-                        registers[reg_select_buff] = RAM[temp] >> 4;
-                        registers[reg_select_buff + 1] = RAM[temp] & 0x0f;
+                        temp = registers_buff[0] << 4;
+                        temp = temp | registers_buff[1];
+                        registers_buff[reg_select_buff] = RAM[temp] >> 4;
+                        registers_buff[reg_select_buff + 1] = RAM[temp] & 0x0f;
                         break;
                 }
                 break;
@@ -283,11 +292,14 @@ void execute() {
                 }
                 break;
             case ISZ:
-                registers[reg_select_buff] = (registers[reg_select_buff] + 1) % 16;
-                if (registers[reg_select_buff]) PC = jump_addr_buff;
+                registers_buff[reg_select_buff] = (registers_buff[reg_select_buff] + 1) % 16;
+                if (registers_buff[reg_select_buff]){    
+                    PC_buff = jump_addr_buff;
+                    branch_hazard = 1;
+                }
                 break;
             case INC:
-                registers[reg_select_buff] = (registers[reg_select_buff] + 1) % 16;
+                registers_buff[reg_select_buff] = (registers_buff[reg_select_buff] + 1) % 16;
                 break;
             default:
                 break;
