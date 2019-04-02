@@ -221,12 +221,12 @@ void execute() {
                 }
                 break;
             case SUB:
-                acc += ~registers_buff[reg_select_buff] + carry;
-                carry = 0;
+                acc -= registers_buff[reg_select_buff] + carry;
+                carry = 1;
                 if (acc > 15) {
-                    acc = acc & 0x0f;
-                    carry = 1;
+                    carry = 0;
                 }
+                acc = acc & 0x0f;
                 break;
             case XCH:
                 temp = acc;
