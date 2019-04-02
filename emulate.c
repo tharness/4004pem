@@ -254,6 +254,9 @@ void execute() {
                     case KBP:
                         term = 1;
                         break;
+                    case IAC:
+                        acc = (acc + 1) % 16;
+                        break;
                 }
                 break;
             case RW_MEM_STATUS:
@@ -287,6 +290,7 @@ void execute() {
                 PC_buff = jump_addr_buff;
                 branch_hazard = 1;
                 if (!pipelined) PC = jump_addr_buff;
+                break;
             case INC:
                 registers_buff[reg_select_buff] = (registers_buff[reg_select_buff] + 1) % 16;
                 break;
