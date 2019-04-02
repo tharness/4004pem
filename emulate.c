@@ -151,6 +151,9 @@ unsigned char decode() {
         case ADD:
             reg_select = OPA;
             break;
+        case SUB:
+            reg_select = OPA;
+            break;
         case XCH:
             reg_select = OPA;
             break;
@@ -174,6 +177,11 @@ unsigned char decode() {
             reg_select = OPA;
             fetch();
             jump_addr = ins;
+            break;
+        case JUN:
+            jump_addr = OPA << 8;
+            fetch();
+            jump_addr |= ins;
             break;
         case INC:
             reg_select = OPA;
@@ -206,6 +214,14 @@ void execute() {
                 break;
             case ADD:
                 acc += registers_buff[reg_select_buff] + carry;
+                carry = 0;
+                if (acc > 15) {
+                    acc = acc & 0x0f;
+                    carry = 1;
+                }
+                break;
+            case SUB:
+                acc += ~registers_buff[reg_select_buff] + carry;
                 carry = 0;
                 if (acc > 15) {
                     acc = acc & 0x0f;
@@ -267,6 +283,10 @@ void execute() {
                     if(!pipelined) PC = jump_addr_buff;
                 }
                 break;
+            case JUN:
+                PC_buff = jump_addr_buff;
+                branch_hazard = 1;
+                if (!pipelined) PC = jump_addr_buff;
             case INC:
                 registers_buff[reg_select_buff] = (registers_buff[reg_select_buff] + 1) % 16;
                 break;
